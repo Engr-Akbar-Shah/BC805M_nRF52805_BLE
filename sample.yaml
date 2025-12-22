@@ -1,0 +1,8 @@
+sample:
+  name: Gleam
+tests:
+  applications.Gleam:
+    build_only: true
+    platform_allow: nrf52dk_nrf52805
+    integration_platforms:
+      - nrf52dk_nrf52805

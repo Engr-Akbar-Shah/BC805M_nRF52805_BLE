@@ -1,0 +1,140 @@
+
+
+#include <zephyr/dt-bindings/led/led.h>
+
+&spi0 {
+	compatible = "nordic,nrf-spi";
+	status = "okay";
+	pinctrl-0 = <&spi0_custom>;
+	pinctrl-1 = <&spi0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	led_strip: ws2812@0 {
+		compatible = "worldsemi,ws2812-spi";
+
+		/* SPI */
+		reg = <0>; /* ignored, but necessary for SPI bindings */
+		spi-max-frequency = <4000000>;
+
+		/* WS2812 */
+		chain-length = <4>; /* arbitrary; change at will */
+		color-mapping = <LED_COLOR_ID_RED
+		LED_COLOR_ID_GREEN
+		LED_COLOR_ID_BLUE>;
+		spi-one-frame = <0x70>;
+		spi-zero-frame = <0x40>;
+	};
+};
+
+/ {
+	aliases {
+		led-strip = &led_strip;
+	};
+};
+
+
+&pinctrl {
+	spi0_custom: spi0_custom {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 29)>,
+			        <NRF_PSEL(SPIM_MOSI, 0, 16)>,
+			        <NRF_PSEL(SPIM_MISO, 0, 30)>;
+		};
+	};
+
+	spi0_sleep: spi0_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 29)>,
+			        <NRF_PSEL(SPIM_MOSI, 0, 16)>,
+			        <NRF_PSEL(SPIM_MISO, 0, 30)>;
+			low-power-enable;
+		};
+	};
+};
+
+/ {
+	leds {
+		compatible = "gpio-leds";
+
+		ledb: led_0 {
+			gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
+			label = "Blue LED";
+		};
+
+		dcdc: led_1 {
+			gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
+			label = "DCDC";
+		};
+	};
+
+	aliases {
+		ledb = &ledb;
+		dcdc = &dcdc;
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	compatible = "nordic,nrf-twim";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	bq25188: bq25188@6a {
+		status = "okay";
+		compatible = "ti,bq25188";
+		reg = <0x6a>;
+		constant-charge-current-max-microamp = <500000>;
+	};
+};
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 20)>,
+					<NRF_PSEL(TWIM_SCL, 0, 0)>;
+		};
+	};
+
+	i2c0_sleep: i2c0_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 0)>,
+					<NRF_PSEL(TWIM_SCL, 0, 20)>;
+			low-power-enable;
+		};
+	};
+};
+
+/ {
+	/* ADC channels: 0 = batt, 1 = ref */
+	zephyr,user {
+		io-channels = <&adc 0>, <&adc 1>;
+	};
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	/* Channel 0: battery on P0.04 = AIN2 */
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN2>; /* P0.04 on nRF52805 */
+		zephyr,resolution = <12>;
+	};
+
+	/* Channel 1: 1.3 V reference on P0.05 = AIN3 */
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN3>; /* P0.05 on nRF52805 */
+		zephyr,resolution = <12>;
+	};
+};
