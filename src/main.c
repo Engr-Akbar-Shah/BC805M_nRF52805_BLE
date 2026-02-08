@@ -3,10 +3,12 @@
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>
+
 #include "gleam_ble.h"
-#include "gleam_ledstrip.h"
 #include "gleam_bq25188.h"
 #include "gleam_adc.h"
+#include "gleam_rgbw.h"
+
 
 LOG_MODULE_REGISTER(MAIN);
 
@@ -56,7 +58,7 @@ int main(void)
     if (0 != err)
         return 0;
 
-    err = gleam_ledstrip_init();
+    err = gleam_rgbw_ledstrip_init();
     if (0 != err)
         return 0;
 
@@ -71,6 +73,16 @@ int main(void)
 
     //     //k_sleep(DELAY_TIME);  // Adjust delay as needed
     // }
+
+    while (1)
+    {
+        if(true == bq25188_intr_occur)
+        {
+            gleam_bq25188_read_interrupt_cause();
+            bq25188_intr_occur = false;
+        }
+    }
+    
 
     return 0;
 }

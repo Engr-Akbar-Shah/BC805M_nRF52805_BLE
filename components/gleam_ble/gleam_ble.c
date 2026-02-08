@@ -1,4 +1,3 @@
-#include "gleam_ble.h"
 
 #include <zephyr/types.h>
 #include <stddef.h>
@@ -11,7 +10,9 @@
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/uuid.h>
-#include "gleam_ledstrip.h"
+
+#include "gleam_ble.h"
+#include "gleam_rgbw.h"
 
 LOG_MODULE_REGISTER(GLEAM_BLE);
 
@@ -31,6 +32,12 @@ extern volatile bool ble_ready;
 
 uint8_t data_rx[MAX_TRANSMIT_SIZE];
 
+static const struct bt_le_adv_param *adv_param =
+    BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN,
+                    BT_GAP_ADV_FAST_INT_MIN_2,
+                    BT_GAP_ADV_FAST_INT_MAX_2,
+                    NULL);
+
 int gleam_service_init(void)
 {
     int err = 0;
@@ -38,7 +45,7 @@ int gleam_service_init(void)
     return err;
 }
 
-uint8_t r = 0, g = 0, b = 0; // Static variables to store RGB values
+uint8_t r = 0, g = 0, b = 0, w = 0; // Static variables to store RGBW values
 
 static ssize_t on_receive(struct bt_conn *conn,
                           const struct bt_gatt_attr *attr,
@@ -66,7 +73,7 @@ static ssize_t on_receive(struct bt_conn *conn,
         r = buffer[0]; // Red value
         g = buffer[1]; // Green value
         b = buffer[2]; // Blue value
-        gleam_ledstrip_set_rgb(r, g, b);
+        // gleam_rgbw_ledstrip_set(r, g, b, w);
         // Print RGB values
         printk("R: %d, G: %d, B: %d\n", r, g, b);
     }
@@ -147,19 +154,11 @@ static void connected(struct bt_conn *conn, uint8_t err)
     }
 }
 
-static void disconnected(struct bt_conn *conn, uint8_t reason)
+static void adv_restart_work_handler(struct k_work *work)
 {
-    printk("Disconnected (reason %u)\n", reason);
-    my_connection = NULL;
-
-    int err = bt_le_adv_start(
-        BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN | BT_LE_ADV_OPT_USE_NAME,
-                        BT_GAP_ADV_FAST_INT_MIN_2,
-                        BT_GAP_ADV_FAST_INT_MAX_2,
-                        NULL),
-        ad, ARRAY_SIZE(ad),
-        NULL, 0);
-
+    k_msleep(1000);
+    int err = bt_le_adv_start(adv_param, ad, ARRAY_SIZE(ad),
+                              sd, ARRAY_SIZE(sd));
     if (err)
     {
         printk("Failed to restart advertising (err %d)\n", err);
@@ -168,6 +167,15 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
     {
         printk("Advertising restarted\n");
     }
+}
+
+K_WORK_DEFINE(adv_restart_work, adv_restart_work_handler);
+
+static void disconnected(struct bt_conn *conn, uint8_t reason)
+{
+    printk("Disconnected (reason %u)\n", reason);
+    my_connection = NULL;
+    k_work_submit(&adv_restart_work);
 }
 
 static struct bt_conn_cb conn_callbacks = {
@@ -209,13 +217,8 @@ int gleam_ble_init_and_adv(void)
     }
     LOG_INF("BLE STACK IS READY");
 
-    err = bt_le_adv_start(
-        BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN,
-                        BT_GAP_ADV_FAST_INT_MIN_2,
-                        BT_GAP_ADV_FAST_INT_MAX_2,
-                        NULL),
-        ad, ARRAY_SIZE(ad),
-        sd, ARRAY_SIZE(sd));
+    err = bt_le_adv_start(adv_param, ad, ARRAY_SIZE(ad),
+                          sd, ARRAY_SIZE(sd));
     if (err)
     {
         printk("Advertising failed to start(err %d)\n", err);

@@ -13,14 +13,6 @@ target_include_directories(app
     ${CMAKE_CURRENT_SOURCE_DIR}/components/gleam_ble
 )
 
-# Add the component gleam_ledstrip
-target_sources(app PRIVATE
-    components/gleam_ledstrip/gleam_ledstrip.c)
-target_include_directories(app
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/components/gleam_ledstrip
-)
-
 # Add the component gleam_bq25188
 target_sources(app PRIVATE
     components/gleam_bq25188/gleam_bq25188.c)
@@ -35,4 +27,20 @@ target_sources(app PRIVATE
 target_include_directories(app
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/components/gleam_adc
+)
+
+# Add the component gleam_rgbw
+target_sources(app PRIVATE
+    components/gleam_rgbw/gleam_rgbw.c)
+target_include_directories(app
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/gleam_rgbw
+)
+
+# Add Driver rgbw letstrip
+target_sources(app PRIVATE
+    Drivers/driver_rgbw/driver_rgbw.c)
+target_include_directories(app
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/driver_rgbw
 )

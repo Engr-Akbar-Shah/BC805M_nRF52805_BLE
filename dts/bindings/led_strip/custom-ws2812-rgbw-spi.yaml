@@ -1,0 +1,56 @@
+description: Custom WS2812-compatible RGBW LED strip over SPI (for SK6812RGBW)
+compatible: "custom,ws2812-rgbw-spi"
+on-bus: spi
+
+properties:
+  reg:
+    type: int
+    required: true
+
+  spi-max-frequency:
+    type: int
+    required: true
+
+  chain-length:
+    type: int
+    required: true
+
+  color-mapping:
+    type: array
+    required: false
+    default:
+      - LED_COLOR_ID_GREEN
+      - LED_COLOR_ID_RED
+      - LED_COLOR_ID_BLUE
+      - LED_COLOR_ID_WHITE
+    description: Channel to color mapping (pixel order). Use LED_COLOR_ID_* constants.
+
+  spi-one-frame:
+    type: int
+    required: false
+    default: 0x70
+
+  spi-zero-frame:
+    type: int
+    required: false
+    default: 0x40
+
+  reset-delay:
+    type: int
+    required: false
+    default: 50
+
+  has-white-channel:
+    type: boolean
+    required: false
+    description: Set if the strip has a white channel (RGBW).
+
+  duplex:
+    type: int
+    required: false
+    description: SPI duplex mode (ignored by this driver, added for compatibility with SPI_DT_SPEC macros)
+
+  frame-format:
+    type: int
+    required: false
+    description: SPI frame format (ignored by this driver, added for compatibility with SPI_DT_SPEC macros)
